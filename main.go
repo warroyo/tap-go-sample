@@ -21,6 +21,7 @@ func main() {
 	router := httprouter.New()
 
 	router.GET("/companies", getCompanies())
+	router.ServeFiles("/docs/*filepath", http.Dir("docs"))
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
