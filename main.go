@@ -5,10 +5,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/warroyo/tap-go-sample/pkg/database"
 	"github.com/warroyo/tap-go-sample/pkg/handler"
 	"github.com/warroyo/tap-go-sample/pkg/listing"
@@ -37,22 +39,25 @@ func seedDB() {
 
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
-	res, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS "+dbname)
-	if err != nil {
-		log.Printf("Error %s when creating DB\n", err)
-		return
-	}
-	no, err := res.RowsAffected()
-	if err != nil {
-		log.Printf("Error %s when fetching rows", err)
-		return
-	}
-	log.Printf("rows affected %d\n", no)
+	log.Print(reflect.TypeOf(db.Driver()).String())
+	if reflect.TypeOf(db.Driver()).String() != "*sqlite3.SQLiteDriver" {
+		res, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS "+dbname)
+		if err != nil {
+			log.Printf("Error %s when creating DB\n", err)
+			return
+		}
+		no, err := res.RowsAffected()
+		if err != nil {
+			log.Printf("Error %s when fetching rows", err)
+			return
+		}
+		log.Printf("rows affected %d\n", no)
 
-	_, err = db.Exec("USE " + dbname)
-	if err != nil {
-		log.Printf("Error %s", err)
-		return
+		_, err = db.Exec("USE " + dbname)
+		if err != nil {
+			log.Printf("Error %s", err)
+			return
+		}
 	}
 
 	_, table_check := db.Query("select * from companies;")
@@ -60,7 +65,7 @@ func seedDB() {
 	if table_check == nil {
 		log.Printf("table exists not seeding")
 	} else {
-		res, err = db.ExecContext(ctx, "CREATE TABLE companies ( id integer, name varchar(32) )")
+		_, err := db.ExecContext(ctx, "CREATE TABLE companies ( id integer, name varchar(32) )")
 		if err != nil {
 			log.Printf("Error %s when creating Table\n", err)
 			return
@@ -72,7 +77,7 @@ func seedDB() {
 		}
 
 		query := "INSERT INTO `companies` (`id`, `name`) VALUES ( ?, ?)"
-		res, err = db.ExecContext(ctx, query, company.Id, company.Name)
+		_, err = db.ExecContext(ctx, query, company.Id, company.Name)
 		if err != nil {
 			log.Printf("Error %s when seeding Table\n", err)
 			return
@@ -89,7 +94,7 @@ func seedDB() {
 
 	ctx, cancelfunc = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
-	err = db.PingContext(ctx)
+	err := db.PingContext(ctx)
 	if err != nil {
 		log.Printf("Errors %s pinging DB", err)
 		return
