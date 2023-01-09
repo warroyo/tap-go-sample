@@ -25,7 +25,7 @@ func ConnectToDB(init bool) *sql.DB {
 	//check if DB params are sent, if not create sqllite
 	if dbinfo.dbHost == "" {
 		log.Print("using sqllite")
-		db, err := sql.Open("sqlite3", file)
+		db, err := sql.Open("sqlite", file)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -95,7 +95,7 @@ func SeedDB() {
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	log.Print(reflect.TypeOf(db.Driver()).String())
-	if reflect.TypeOf(db.Driver()).String() != "*sqlite3.SQLiteDriver" {
+	if reflect.TypeOf(db.Driver()).String() != "*sqlite.Driver" {
 		res, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS "+dbname)
 		if err != nil {
 			log.Printf("Error %s when creating DB\n", err)
